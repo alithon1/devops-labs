@@ -82,33 +82,20 @@
 
 Оказалось, что отдельный модуль для статики в новых версиях Ktor не нужен — функция `staticResources()`, которую мы используем для отдачи `index.html`, находится внутри `ktor-server-core`. Убрали лишнюю зависимость. Заодно выяснили, что версия Ktor должна совпадать у плагина, BOM и всех артефактов: у нас сначала были разные версии, и Gradle не мог разрешить зависимости. Привели всё к `3.1.3`, и сборка прошла. В итоге в `build.gradle.kts` подключили плагины Kotlin, Ktor и kotlinx.serialization, а в зависимостях — `ktor-server-core`, `ktor-server-netty`, `ktor-server-content-negotiation`, `ktor-serialization-kotlinx-json`, Exposed для работы с БД, драйвер PostgreSQL и logback для логирования. 
 
-
-<img width="1118" height="226" alt="image" src="https://github.com/user-attachments/assets/10e7fd85-6122-4bf0-bf97-bb59f9a0300f" />
-
-
-<img width="1486" height="878" alt="image" src="https://github.com/user-attachments/assets/d9223993-aca9-43c6-b142-35859077c969" />
-
+- [build.gradle.kts](build.gradle.kts) — зависимости и плагины
 
 ## Написание бэкенда
 
 Бэкенд состоит из двух файлов. В `Database.kt` описали таблицу `cats` через Kotlin DSL от Exposed: `object Cats : Table("cats")` с колонками `id`, `name`, `color`, `createdAt`. Там же функция `initDatabase()`, которая подключается к PostgreSQL, беря параметры из переменных окружения или значений по умолчанию. На Mac пользователь по умолчанию — системный логин, а не `postgres`, поэтому используем `System.getProperty("user.name")`. После подключения вызываем `SchemaUtils.createMissingTablesAndColumns(Cats)` — это создаёт таблицу, если её нет, и ничего не делает, если она уже есть. Это удобно: не нужно следить за тем, создана ли таблица, база сама приведёт схему в порядок.
 
-<img width="1876" height="1406" alt="image" src="https://github.com/user-attachments/assets/74edfb89-ef06-43a0-956a-081b7923b8e4" />
+- [Database.kt](src/main/kotlin/Database.kt) — таблица `cats` и подключение к БД
 
 
 В `Application.kt` описали точку входа и маршруты. Функция `main` запускает `embeddedServer(Netty, port = 8080)` — это встроенный сервер Ktor на движке Netty. Внутри модуля вызываем `initDatabase()`, устанавливаем `ContentNegotiation` с JSON — это плагин, который автоматически превращает Kotlin-объекты в JSON и обратно. В маршрутах описали четыре эндпоинта: `GET /api/health` возвращает `{"status":"ok"}` для проверки, что сервер жив; `GET /api/cats` читает всех кошек из базы и отдаёт списком; `POST /api/cats` принимает JSON с именем и цветом, вставляет запись в базу и возвращает её с присвоенным id; `DELETE /api/cats/{id}` удаляет кошку по id. Также подключили `staticResources("/", "static")`, чтобы Ktor отдавал `index.html` из папки `resources/static/` по корневому пути. Это удобно: фронт и API на одном порту, нет проблем с CORS.
 
 Для сериализации описали два data-класса: `Cat` с полями `id`, `name`, `color` и `CreateCatRequest` с полями `name`, `color`. Аннотация `@Serializable` из kotlinx.serialization говорит компилятору сгенерировать код для превращения объекта в JSON и обратно. Поле `id` сделали nullable (`Int?`) и со значением по умолчанию `null`, потому что до вставки в базу id ещё нет — его генерирует PostgreSQL.
 
-
-<img width="2036" height="1720" alt="image" src="https://github.com/user-attachments/assets/149b004a-8b27-44be-80c6-b2238b246515" />
-
-
-<img width="1834" height="1592" alt="image" src="https://github.com/user-attachments/assets/daf53c48-3e90-41de-bb78-c0956dad9b93" />
-
-
-<img width="1744" height="980" alt="image" src="https://github.com/user-attachments/assets/99e8b586-133d-496c-90c4-ad543d324192" />
-
+- [Main.kt](src/main/kotlin/Main.kt) — сервер Ktor и маршруты
 
 При написании бэкенда столкнулись с двумя ошибками компиляции. Первая — `Unresolved reference 'javatime'`: оказалось, что для работы с датой и временем в Exposed нужен отдельный модуль `exposed-java-time`, которого у нас не было. Добавили его в `build.gradle.kts` с той же версией, что и остальные модули Exposed. Вторая — `Unresolved reference 'eq'`: функция сравнения `eq`, используемая в `deleteWhere`, не подтягивалась через `import org.jetbrains.exposed.sql.*`. Добавили явный импорт `org.jetbrains.exposed.sql.SqlExpressionBuilder.eq`, и ошибка исчезла.
 
@@ -128,8 +115,7 @@
 
 Добавили простую защиту от XSS: функция `escapeHtml` экранирует спецсимволы (`<`, `>`, `&`, `"`, `'`), чтобы если кто-то введёт `<script>`, он не выполнился как код. Это стандартная практика при выводе пользовательских данных на страницу.
 
-
-<img width="1818" height="1680" alt="image" src="https://github.com/user-attachments/assets/5968047a-a85e-4215-9777-80356c7c668e" />
+- [index.html](src/main/resources/static/index.html) — фронтенд
 
 
 ## Итоговая проверка
