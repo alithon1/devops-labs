@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ветеринарная база — кошки</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
+        h1 { color: #444; }
+        form { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        input, button { padding: 8px; font-size: 16px; }
+        input { flex: 1; min-width: 150px; }
+        button { cursor: pointer; }
+        .cat {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 10px; margin: 6px 0; border: 1px solid #ddd;
+          border-radius: 6px; background: #fafafa;
+        }
+        .cat-name { font-weight: bold; }
+        .cat-color { color: #777; font-size: 14px; margin-left: 10px; }
+        .del { background: #fdd; border: 1px solid #d88; border-radius: 4px; }
+        .err { color: red; }
+        .empty { color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+<h1>🐱 Ветеринарная база кошек</h1>
+
+<form id="form">
+    <input id="name" placeholder="Кличка (например, Мурка)" required>
+    <input id="color" placeholder="Цвет (например, рыжий)" required>
+    <button type="submit">Добавить</button>
+</form>
+
+<p id="err" class="err"></p>
+<div id="list"></div>
+
+<script>
+    const API = "/api/cats";
+    const form = document.getElementById("form");
+    const nameInput = document.getElementById("name");
+    const colorInput = document.getElementById("color");
+    const list = document.getElementById("list");
+    const err = document.getElementById("err");
+
+    async function load() {
+      const r = await fetch(API);
+      const cats = await r.json();
+      list.innerHTML = "";
+
+      if (cats.length === 0) {
+        list.innerHTML = '<p class="empty">Пока ни одной кошки. Добавь первую!</p>';
+        return;
+      }
+
+      for (const cat of cats) {
+        const div = document.createElement("div");
+        div.className = "cat";
+        div.innerHTML = `
+          <div>
+            <span class="cat-name">${escapeHtml(cat.name)}</span>
+            <span class="cat-color">— ${escapeHtml(cat.color)}</span>
+          </div>
+          <button class="del" data-id="${cat.id}">Выписать</button>
+        `;
+        list.appendChild(div);
+      }
+
+      document.querySelectorAll(".del").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await fetch(`${API}/${btn.dataset.id}`, { method: "DELETE" });
+          load();
+        });
+      });
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = "";
+
+      const r = await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          name: nameInput.value,
+          color: colorInput.value
+        })
+      });
+
+      if (!r.ok) {
+        err.textContent = "Ошибка сохранения";
+        return;
+      }
+
+      nameInput.value = "";
+      colorInput.value = "";
+      load();
+    });
+
+    load();
+</script>
+</body>
+</html>
