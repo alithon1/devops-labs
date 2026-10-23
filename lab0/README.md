@@ -17,9 +17,24 @@
 Наше приложение — это веб-интерфейс для ветеринарной клиники, который позволяет вести учёт кошек. Пользователю доступен следующий функционал:
 
 - **Просмотр списка кошек.** При открытии страницы загружается список всех животных, когда-либо добавленных в базу данных.
+
+<img width="1594" height="666" alt="image" src="https://github.com/user-attachments/assets/8ef3761d-6c8a-4a61-9844-ebb25c07c391" />
+
 - **Добавление новой кошки.** Через форму на странице можно добавить кошку, указав её кличку и цвет. После отправки данные сохраняются в PostgreSQL.
+
+<img width="1596" height="704" alt="image" src="https://github.com/user-attachments/assets/9ef81ebb-6aa9-4b21-9e5e-5ed77885e6ba" />
+
+<img width="1634" height="766" alt="image" src="https://github.com/user-attachments/assets/2d322fd1-c324-4c84-8713-ffc7fa9b277d" />
+
 - **Удаление записи.** У каждой кошки в списке есть кнопка «Выписать», которая безвозвратно удаляет запись из базы данных.
+
+<img width="1672" height="680" alt="image" src="https://github.com/user-attachments/assets/cc0a8b5a-6ea4-458f-8f51-55c5ce3d866e" />
+
+<img width="1622" height="454" alt="image" src="https://github.com/user-attachments/assets/630c1f0c-0918-40f4-8245-58a23c338615" />
+
 - **Проверка работоспособности.** Сервер имеет health-check эндпоинт для проверки того, что бэкенд запущен и отвечает на запросы.
+
+<img width="636" height="92" alt="image" src="https://github.com/user-attachments/assets/c4a5c7af-877d-4168-8b2a-6ba0954ced40" />
 
 ## Состав приложения и архитектура
 
