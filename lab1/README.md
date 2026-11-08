@@ -1,146 +1,262 @@
-Лабораторная работа №1 — nginx
+# Лабораторная работа №1 — nginx
 
+## Цель работы
+Настроить nginx в качестве единой точки входа и балансировщика нагрузки перед сервисом из Лабы 0. Основная задача — обеспечить отказоустойчивость: сайт должен продолжать работать, даже если один из экземпляров бэкенда выйдет из строя. Также необходимо настроить HTTPS, виртуальные хосты, ограничение частоты запросов и базовую авторизацию.
+
+## Ход работы
+
+### 1. Установка и настройка HTTPS
+Первым шагом стала установка nginx и генерация самоподписанного сертификата с помощью `mkcert`. 
+
+```bash
 brew install nginx
+```
+Вывод терминала с процессом установки nginx:
 <img width="1190" height="356" alt="image" src="https://github.com/user-attachments/assets/d9d953b4-af24-4f1f-b641-fa8ed60d3358" />
 
-
+```bash
 brew install mkcert nss
-
+```
+Вывод терминала с процессом установки mkcert и nss:
 <img width="1406" height="666" alt="image" src="https://github.com/user-attachments/assets/11875b5b-44c0-4c3e-8edf-ac38eb8373ed" />
 
-
+```bash
 mkcert -install
-
+```
+Вывод терминала об успешной установке локального сертификата:
 <img width="884" height="36" alt="image" src="https://github.com/user-attachments/assets/3777edab-b056-410e-a665-174fad1d2aa8" />
 
-боль в том что я не могла вспомнить пароль sudo так как думала что это отдельный пароль пока не поняла что он и есть пароль при входе в учетную запись
+В процессе возникла неожиданная сложность: я не могла вспомнить пароль `sudo`, так как думала, что это отдельный системный пароль. Потребовалось время, чтобы понять, что он совпадает с паролем при входе в учетную запись.
 
+При генерации сертификата возникла ошибка Java (keytool). Я обошла её, сбросив переменную окружения:
 
+```bash
 unset JAVA_HOME
 mkcert localhost
-
+```
+Вывод терминала с успешной генерацией файлов сертификата для localhost:
 <img width="1188" height="190" alt="image" src="https://github.com/user-attachments/assets/ed5e2fe8-df99-463c-85bb-52a05812d885" />
 
-nginx -t
+### 2. Первичная настройка nginx и развод фронта с бэком
+Я написала конфиг `lab1.conf`, в котором настроен редирект с 80 на 443 порт, а также проксирование запросов `/api` на бэкенд.
 
+```bash
+nginx -t
+```
+Вывод терминала об успешной проверке синтаксиса конфигурации nginx:
 <img width="1146" height="58" alt="image" src="https://github.com/user-attachments/assets/700db6cb-e88f-4c24-9b63-a2b1e17fe397" />
 
+```bash
 brew services restart nginx
-
+```
+Вывод терминала об успешном перезапуске сервиса nginx:
 <img width="1268" height="32" alt="image" src="https://github.com/user-attachments/assets/b212d117-93c5-4a2e-8587-580820ef13bf" />
 
+```bash
 curl -I http://localhost
+```
+Вывод терминала с заголовками ответа от nginx (редирект):
 <img width="804" height="204" alt="image" src="https://github.com/user-attachments/assets/2e1940a3-c07b-46c8-8bf5-82339fb68fb8" />
 
-Он не видит наш новый конфиг
+При первой проверке я перепутала адрес и открыла `http://0.0.0.0:8080/`, где вместо моего сервиса отобразилась стандартная заглушка "Welcome to nginx!". Nginx перехватил порт, из-за чего я не сразу поняла, что смотрю не туда:
 
+Стандартная страница-заглушка "Welcome to nginx!", которую я ошибочно увидела на порту 8080:
 <img width="1444" height="596" alt="image" src="https://github.com/user-attachments/assets/a87cc0ed-d1f0-41a3-8cc2-b773e13bdce5" />
 
-brew services restart nginx
+Затем выяснилось, что дефолтный конфиг nginx занял порт 8080, из-за чего мой Kotlin-бэкенд не мог запуститься. Пришлось найти процесс и разобраться с портами:
 
-<img width="1170" height="86" alt="image" src="https://github.com/user-attachments/assets/4d0c76f6-4ad1-4286-be3c-87b9b816cd89" />
-
-curl -I http://localhost
-<img width="1410" height="34" alt="image" src="https://github.com/user-attachments/assets/7fee7cb4-dda1-4e7d-bc87-3c9ff8461bb2" />
-
+```bash
 lsof -i :8080
-
+```
+Вывод терминала, показывающий, какой процесс занял порт 8080:
 <img width="1354" height="62" alt="image" src="https://github.com/user-attachments/assets/d995d816-1d50-4f3d-b3a5-f9d287adf738" />
 
-curl http://localhost:8080/api/cats - отобразилось []  
+Проверка API через бэкенд напрямую и через nginx:
 
+```bash
+curl http://localhost:8080/api/cats
+```
+Терминал показал пустой массив `[]` (то есть бэкенд работает).
 
+Затем я попыталась обратиться к API через nginx по HTTPS:
+
+```bash
 curl -k https://localhost/api/cats
-
+```
+Однако вместо ожидаемого ответа терминал выдал ошибку: 
 <img width="1420" height="32" alt="image" src="https://github.com/user-attachments/assets/fcc29c23-af81-4efd-99eb-06d018f16dc0" />
 
+Это показалось странным: бэкенд работает, а сайт по HTTPS не отвечает.
+
+Затем в логах обнаружилась проблема с путями и портом:
+
+```bash
 tail -n 15 /opt/homebrew/var/log/nginx/error.log
+```
+Вывод логов nginx с ошибками о занятом порте:
 <img width="1550" height="592" alt="image" src="https://github.com/user-attachments/assets/b1c7e4fa-f624-4858-bd5a-bec6926020c1" />
 
+```bash
 grep -rn "8080" /opt/homebrew/etc/nginx/ 
-
+```
+Вывод терминала с результатами поиска порта 8080 в конфигах:
 <img width="1312" height="148" alt="image" src="https://github.com/user-attachments/assets/b5df70a0-14d8-4ff9-bd84-30fa1822fe3b" />
 
+Проблема решилась редактированием главного `nginx.conf` (я закомментировала дефолтный `listen 8080;`). После этого API через nginx успешно отдал `[]`:
 
-curl -k https://localhost/api/cats - отобразилось []
+```bash
+curl -k https://localhost/api/cats
+```
+Отобразилось []. Бэкенд работает!
 
+### 3. Балансировка нагрузки
+
+Для того чтобы nginx мог распределять запросы, мне нужно было запустить не один, а два экземпляра моего Kotlin-сервиса. Для этого я внесла небольшую правку в код `Main.kt` из Лабы 0. 
+
+Изначально сервер был жестко привязан к порту 8080. Я заменила фиксированный порт на чтение переменной окружения:
+```kotlin
+val port = System.getenv("PORT")?.toInt() ?: 8080
+```
+Теперь сервер запускается на порту, который я ему укажу через переменную `PORT`. Если переменная не задана, он по умолчанию использует 8080. Также я добавила заголовок `X-Backend-Port` в ответ на `/api/health`, чтобы визуально видеть, какой именно сервер ответил на запрос.
+
+**Как это запускалось в IntelliJ IDEA:**
+1. Первый сервер запускался обычно (через зеленый треугольник `Run`). Так как переменная `PORT` не была задана, он занимал порт **8080**.
+2. Чтобы запустить второй сервер, я открыла настройки конфигурации запуска (`Edit Configurations...`), скопировала текущую конфигурацию и назвала её `MainKt 8081`.
+3. В настройках новой конфигурации я нашла поле **Environment variables** и добавила туда значение `PORT=8081`. 
+4. Я запустила вторую конфигурацию. Благодаря правке в коде, второй сервер прочитал переменную и запустился на порту **8081**, не конфликтуя с первым.
 
 <img width="1666" height="1334" alt="image" src="https://github.com/user-attachments/assets/afc66b4e-8cb7-4b3d-b6d9-37ffb8dc10c1" />
-
 <img width="972" height="976" alt="image" src="https://github.com/user-attachments/assets/22bc9ae3-f127-4cad-a9f4-6f5f0b3f9336" />
-
 <img width="550" height="330" alt="image" src="https://github.com/user-attachments/assets/0ffd3206-bf7b-45ee-9af6-47bf935b4143" />
 
+После этого я добавила в конфиг nginx блок `upstream` с двумя инстансами:
+
+Чтобы изменить этот файл, я вызвала команду: 
+
+```bash
 nano /opt/homebrew/etc/nginx/servers/lab1.conf
-изменила файл
+```
+Затем вызвала: 
 
+```bash
 nginx -t
-
-<img width="1142" height="56" alt="image" src="https://github.com/user-attachments/assets/30aa1344-f0df-4051-90d4-a7eca30ef995" />
-
-
-nginx -t
-
+```
+Вывод терминала об успешной проверке обновленного конфига:
 <img width="1260" height="62" alt="image" src="https://github.com/user-attachments/assets/fc3508b2-f128-4a79-a97c-6ef1ab026903" />
 
+После перезапуска запросы начали чередоваться между портами:
+
+```bash
 brew services restart nginx
-
 for i in {1..4}; do curl -sk -i https://localhost/api/health | grep X-Backend-Port; done
-
+```
+Вывод терминала, показывающий чередование портов 8080 и 8081:
 <img width="620" height="136" alt="image" src="https://github.com/user-attachments/assets/875cf4f1-b224-4f9f-b011-c3762cb29777" />
 
 
+### 4. Дополнительные настройки nginx и проверка
+
+Для выполнения всех требований в конфиг nginx (`lab1.conf`) были добавлены дополнительные директивы.
+
+**Своя страница 404**
+В папке `lab1/www` был создан файл `404.html`. В конфиг добавлены строки:
+```nginx
+error_page 404 /404.html;
+location = /404.html {
+    root /Users/cubelime/Desktop/devops-labs/lab1/www;
+    internal;
+}
+```
+
+**Псевдоним пути (alias) для `/docs`**
+Создана папка с документацией и добавлен блок в конфиг:
+```bash
 mkdir -p ~/Desktop/devops-labs/lab1/docs
 echo "Это документация нашего проекта" > ~/Desktop/devops-labs/lab1/docs/readme.txt
+```
+```nginx
+location /docs {
+    alias /Users/cubelime/Desktop/devops-labs/lab1/docs/;
+}
+```
 
-nginx -t
-<img width="1260" height="58" alt="image" src="https://github.com/user-attachments/assets/be5d4880-9267-40ec-834d-b64f5c772555" />
+**Виртуальные хосты (`second.local`)**
+Домен добавлен в `/etc/hosts`. В конфиг nginx добавлен новый `server`:
+```nginx
+server {
+    listen 443 ssl;
+    server_name second.local;
+    ssl_certificate ... (путь к сертификату)
+    ssl_certificate_key ... (путь к ключу)
+    location / {
+        return 200 "Это второй сайт (second.local)\n";
+    }
+}
+```
 
-brew services restart nginx
+**Ограничение частоты запросов (`limit_req`)**
+Добавлена зона лимита и ограничение для API (с принудительным статусом 429):
+```nginx
+limit_req_zone $binary_remote_addr zone=mylimit:10m rate=2r/s;
 
-<img width="1084" height="80" alt="image" src="https://github.com/user-attachments/assets/4256df7a-b52e-4f7f-8d7e-3135ac17538e" />
+location /api {
+    limit_req zone=mylimit burst=3 nodelay;
+    limit_req_status 429;
+    ...
+}
+```
 
-<img width="1118" height="644" alt="image" src="https://github.com/user-attachments/assets/29ec735b-22a1-474e-bcaa-40c9d6c06ce4" />
+**Базовая авторизация для `/admin` и трудности с ней**
 
-Решение проблем :
-sudo chmod 644 /opt/homebrew/etc/nginx/.htpasswd
-добавление строчки location /api {
-        limit_req_status 429;
+**Скрипт автоматической проверки**
+Чтобы не проверять каждый пункт вручную, я написала bash-скрипт, который автоматизирует весь процесс. С самим кодом скрипта можно ознакомиться по ссылке: [check.sh](check.sh).
 
-<img width="952" height="642" alt="image" src="https://github.com/user-attachments/assets/55d40f85-a0f0-403b-99ab-e08771279729" />
-
-ls -la /opt/homebrew/etc/nginx/.htpasswd
-
-<img width="1248" height="32" alt="image" src="https://github.com/user-attachments/assets/368f54e1-2588-44d0-9434-7ab8f5eb36d2" />
-
-
-tail -n 20 /opt/homebrew/var/log/nginx/error.log
-
-<img width="2622" height="564" alt="image" src="https://github.com/user-attachments/assets/92c1ac42-5fbb-4a1d-af83-1508705e7f1b" />
-
-nginx -V 2>&1 | grep -o with-http_auth_basic_module ничего не вывелось - заново переустановили
-
+Создан файл с паролем:
+```bash
 htpasswd -c -b /opt/homebrew/etc/nginx/.htpasswd admin qwerty123
-chmod 644 /opt/homebrew/etc/nginx/.htpasswd
-перезапускаем
- 
-curl -kI -u admin:qwerty123 https://localhost/admin
+```
 
-<img width="784" height="206" alt="image" src="https://github.com/user-attachments/assets/e3432a50-97e8-43be-9456-2ee9da3c2a02" />
+Изначально я добавила блок `/admin` с директивой `return 200`, но nginx игнорировал `auth_basic` и пускал всех подряд. При проверке через `curl` отдавался код 200 даже без пароля. Я выяснила, что `return` имеет приоритет над проверкой авторизации. Тогда я изменила подход — убрала `return` и указала `root` с файлом:
+```nginx
+location /admin {
+    auth_basic "Admin Area";
+    auth_basic_user_file /opt/homebrew/etc/nginx/.htpasswd;
+    root /Users/cubelime/Desktop/devops-labs/lab1/www;
+    try_files /admin.html =404;
+}
+```
 
-Выяснилось что у меня прблема в самом скрипте у меня там была отпечатка в самом пароле
+После этого без пароля nginx начал отдавать `401 Unauthorized`, но с правильным паролем тоже отдавал 401. Оказалось, что nginx не хватало прав на чтение файла `.htpasswd`. Я выдала их:
+```bash
+sudo chmod 644 /opt/homebrew/etc/nginx/.htpasswd
+```
 
-отсановили один сервис 8081
+Я остановилось и вовремя посмотрела сам скрипт `check.sh`, выяснилось, что все эти проблемы были в самом скрипте — там была опечатка в пароле! После её исправления все проверки прошли успешно.
+
+
+### 5. Главный результат — отказоустойчивость
+Чтобы доказать, что nginx справляется с падением бэкенда, я остановила процесс на порту 8081 и сделала запросы. Все 4 запроса были обработаны живым инстансом на порту 8080:
+
+```bash
 for i in {1..4}; do curl -sk -i https://localhost/api/health | grep X-Backend-Port; done
-
+```
+Вывод терминала, где после отключения 8081 все запросы идут только на 8080:
 <img width="800" height="116" alt="image" src="https://github.com/user-attachments/assets/76d3f755-eaa4-4bbe-8cee-88842558e32b" />
 
+Скриншот IDEA, подтверждающий остановку второго сервера:
+<img width="1494" height="130" alt="image" src="https://github.com/user-attachments/assets/62fd5dc2-9b7f-4016-8475-370512d2ee2d" />
 
+Окончательный вывод скрипта `check.sh`:
 <img width="1078" height="642" alt="image" src="https://github.com/user-attachments/assets/5b0604be-7d7b-4fb2-8324-414e98e611ce" />
 
+## Выводы
 
+В ходе этой лабораторной работы я настроила **nginx** как единую точку входа и балансировщик для своего сервиса. Мне удалось успешно реализовать **HTTPS** с самоподписанным сертификатом, разделить отдачу статики и запросов к API, а также настроить виртуальные хосты, закрыть админку паролем и ограничить частоту запросов.
 
+Самым интересным и одновременно сложным этапом стала настройка **балансировки** и проверка отказоустойчивости. В процессе я поняла, что главные трудности возникали не из-за хитростей самого nginx, а из-за моей собственной невнимательности. То nginx занимал нужный порт, то не хватало прав на чтение файла с паролями, то в скрипте проверки оказывалась банальная опечатка. Все эти мелочи сбивали с толку и отнимали много времени.
 
+Однако именно эти ошибки научили меня главному: когда что-то не работает, не нужно паниковать. Нужно просто методично проверять всё по цепочке — работает ли бэкенд отдельно, слушает ли nginx нужный порт, и что вообще написано в логах ошибок (`error.log`).
 
+В итоге главная цель была достигнута: когда я специально отключила один из бэкендов, сайт не упал, а продолжил стабильно работать, автоматически перенаправляя запросы на живую копию. Теперь я на практике понимаю, как работает **отказоустойчивость**, и знаю, что за ней стоят не сложные манипуляции, а правильный конфиг и внимательность к деталям.
 
 
