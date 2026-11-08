@@ -107,6 +107,30 @@ sudo chmod 644 /opt/homebrew/etc/nginx/.htpasswd
 добавление строчки location /api {
         limit_req_status 429;
 
+<img width="952" height="642" alt="image" src="https://github.com/user-attachments/assets/55d40f85-a0f0-403b-99ab-e08771279729" />
+
+ls -la /opt/homebrew/etc/nginx/.htpasswd
+
+<img width="1248" height="32" alt="image" src="https://github.com/user-attachments/assets/368f54e1-2588-44d0-9434-7ab8f5eb36d2" />
+
+
+tail -n 20 /opt/homebrew/var/log/nginx/error.log
+
+<img width="2622" height="564" alt="image" src="https://github.com/user-attachments/assets/92c1ac42-5fbb-4a1d-af83-1508705e7f1b" />
+
+nginx -V 2>&1 | grep -o with-http_auth_basic_module ничего не вывелось - заново переустановили
+
+htpasswd -c -b /opt/homebrew/etc/nginx/.htpasswd admin qwerty123
+chmod 644 /opt/homebrew/etc/nginx/.htpasswd
+перезапускаем
+ 
+curl -kI -u admin:qwerty123 https://localhost/admin
+
+<img width="784" height="206" alt="image" src="https://github.com/user-attachments/assets/e3432a50-97e8-43be-9456-2ee9da3c2a02" />
+
+Выяснилось что у меня прблема в самом скрипте у меня там была отпечатка в самом пароле
+
+
 
 
 
