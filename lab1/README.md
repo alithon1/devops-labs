@@ -65,4 +65,49 @@ grep -rn "8080" /opt/homebrew/etc/nginx/
 curl -k https://localhost/api/cats - отобразилось []
 
 
+<img width="1666" height="1334" alt="image" src="https://github.com/user-attachments/assets/afc66b4e-8cb7-4b3d-b6d9-37ffb8dc10c1" />
+
+<img width="972" height="976" alt="image" src="https://github.com/user-attachments/assets/22bc9ae3-f127-4cad-a9f4-6f5f0b3f9336" />
+
+<img width="550" height="330" alt="image" src="https://github.com/user-attachments/assets/0ffd3206-bf7b-45ee-9af6-47bf935b4143" />
+
+nano /opt/homebrew/etc/nginx/servers/lab1.conf
+изменила файл
+
+nginx -t
+
+<img width="1142" height="56" alt="image" src="https://github.com/user-attachments/assets/30aa1344-f0df-4051-90d4-a7eca30ef995" />
+
+
+nginx -t
+
+<img width="1260" height="62" alt="image" src="https://github.com/user-attachments/assets/fc3508b2-f128-4a79-a97c-6ef1ab026903" />
+
+brew services restart nginx
+
+for i in {1..4}; do curl -sk -i https://localhost/api/health | grep X-Backend-Port; done
+
+<img width="620" height="136" alt="image" src="https://github.com/user-attachments/assets/875cf4f1-b224-4f9f-b011-c3762cb29777" />
+
+
+mkdir -p ~/Desktop/devops-labs/lab1/docs
+echo "Это документация нашего проекта" > ~/Desktop/devops-labs/lab1/docs/readme.txt
+
+nginx -t
+<img width="1260" height="58" alt="image" src="https://github.com/user-attachments/assets/be5d4880-9267-40ec-834d-b64f5c772555" />
+
+brew services restart nginx
+
+<img width="1084" height="80" alt="image" src="https://github.com/user-attachments/assets/4256df7a-b52e-4f7f-8d7e-3135ac17538e" />
+
+<img width="1118" height="644" alt="image" src="https://github.com/user-attachments/assets/29ec735b-22a1-474e-bcaa-40c9d6c06ce4" />
+
+Решение проблем :
+sudo chmod 644 /opt/homebrew/etc/nginx/.htpasswd
+добавление строчки location /api {
+        limit_req_status 429;
+
+
+
+
 
