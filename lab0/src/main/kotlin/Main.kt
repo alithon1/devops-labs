@@ -21,7 +21,8 @@ data class Cat(val id: Int? = null, val name: String, val color: String)
 data class CreateCatRequest(val name: String, val color: String)
 
 fun main() {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+    val port = System.getenv("PORT")?.toInt() ?: 8080
+    embeddedServer(Netty, port = port, host = "0.0.0.0") {
         module()
     }.start(wait = true)
 }
@@ -37,6 +38,7 @@ fun Application.module() {
         staticResources("/", "static")
 
         get("/api/health") {
+            call.response.header("X-Backend-Port", System.getenv("PORT") ?: "8080")
             call.respond(mapOf("status" to "ok"))
         }
 
