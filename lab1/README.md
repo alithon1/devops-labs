@@ -130,6 +130,15 @@ curl -kI -u admin:qwerty123 https://localhost/admin
 
 Выяснилось что у меня прблема в самом скрипте у меня там была отпечатка в самом пароле
 
+отсановили один сервис 8081
+for i in {1..4}; do curl -sk -i https://localhost/api/health | grep X-Backend-Port; done
+
+<img width="800" height="116" alt="image" src="https://github.com/user-attachments/assets/76d3f755-eaa4-4bbe-8cee-88842558e32b" />
+
+
+<img width="1078" height="642" alt="image" src="https://github.com/user-attachments/assets/5b0604be-7d7b-4fb2-8324-414e98e611ce" />
+
+
 
 
 
