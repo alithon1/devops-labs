@@ -1,0 +1,10 @@
+admin
+api
+docs
+cats
+dogs
+vet
+meow
+purr
+kittens
+pets
