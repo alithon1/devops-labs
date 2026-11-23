@@ -401,4 +401,71 @@ docker compose up --build -d
 Сначала завершилось с ошибкой, отключила VPN и в итоге была бесконечная загрузка снова включила VPN та к как это более логично оставить включенным и нашла не закрытый контейнер запустила docker rm -f postgres-for-test
 
 и в итоге все загрузилось вот фото 
+<img width="1466" height="280" alt="image" src="https://github.com/user-attachments/assets/3b85007f-081d-44f2-88d7-12dc680ad581" />
 
+запустила docker compose ps и в итоге все три контейнера на месте
+<img width="2218" height="116" alt="image" src="https://github.com/user-attachments/assets/6f20a959-95b0-4297-a2e5-0ecd68a1454b" />
+
+открыла http://localhost:8088/ и добавила кошку вот вото гдя я это сделала
+<img width="1618" height="448" alt="image" src="https://github.com/user-attachments/assets/3607202b-d724-43cd-8c2a-86b57ade17a8" />
+<img width="1608" height="532" alt="image" src="https://github.com/user-attachments/assets/170ae6c7-081f-4d1f-969c-a6df803cdb07" />
+также я обновила страницу и все осталось
+
+curl http://localhost:8088/api/health возвращает успешно
+вот фото <img width="702" height="32" alt="image" src="https://github.com/user-attachments/assets/d8a0d702-bd6b-4fd7-816c-c1ffadeefbd6" />
+
+
+удаляем контейнер-  docker compose rm -sf db вот фото <img width="772" height="90" alt="image" src="https://github.com/user-attachments/assets/c08c0dfa-9709-45e4-bb7f-e2f7f51ec050" /> все успешно
+
+так же можно посмотреть на сайт - там пропал наш кот вот фото
+<img width="1574" height="392" alt="image" src="https://github.com/user-attachments/assets/f64ffed4-a341-4ff5-826d-19e39bcd33fe" />
+
+проверяем что именновынный том не удалился (docker volume ls) вот фото <img width="1218" height="142" alt="image" src="https://github.com/user-attachments/assets/f68d6ba0-ccd9-4a96-8db2-efb60200ea3d" />
+
+создаем контейнер снова  docker compose up -d db
+вот фото
+<img width="924" height="58" alt="image" src="https://github.com/user-attachments/assets/53f80acc-0d1e-4ac0-b757-a93fedd63875" />
+
+проверяем docker compose ps - контейнер есть 
+<img width="2208" height="116" alt="image" src="https://github.com/user-attachments/assets/537be278-a433-4e4e-860e-966592b7c3ab" />
+
+наш Рыжик вернулся!
+<img width="1594" height="510" alt="image" src="https://github.com/user-attachments/assets/aa3d5c3d-9176-4319-89c7-12d439ba732f" />
+
+docker network ls - вот фото <img width="1412" height="168" alt="image" src="https://github.com/user-attachments/assets/82cb2d80-f020-4428-85a2-3b6c2ad82877" />
+
+Проверим, к каким сетям подключён Frontend:
+docker inspect vet-frontend - 1 сеть вото фото
+<img width="1656" height="702" alt="image" src="https://github.com/user-attachments/assets/22acc9d6-c302-4594-9fe5-0009ca9fdd16" />
+
+backend - 2 сети - вот фото <img width="1662" height="1124" alt="image" src="https://github.com/user-attachments/assets/2c6cbff7-6cc1-41df-9231-6ec671df8392" />
+
+
+db - 1 сеть - вот фото <img width="1344" height="704" alt="image" src="https://github.com/user-attachments/assets/efab9ab6-cff1-42da-9283-8e45737e8cdf" />
+
+
+проверяем невозможность подключения docker compose exec frontend sh -c "nc -z -w 3 db 5432" получаем nc: bad address 'db' - вот фото
+<img width="1510" height="112" alt="image" src="https://github.com/user-attachments/assets/1199f292-e894-4bb2-aea3-bf5a0b19acf8" />
+
+docker exec vet-backend whoami 
+получаем app - вот фото
+<img width="674" height="36" alt="image" src="https://github.com/user-attachments/assets/711bdf2c-036c-4af8-9428-c77334ab79da" />
+
+
+docker inspect --format='{{.State.Health.Status}}' vet-backend - вот фото
+<img width="644" height="28" alt="image" src="https://github.com/user-attachments/assets/eccf1192-bc06-4942-8de4-f4061913cb97" />
+
+
+docker inspect --format='{{.State.Health.Status}}' vet-db - вот фото
+<img width="644" height="28" alt="image" src="https://github.com/user-attachments/assets/f0b5e4d6-6d8d-4b45-8cdd-9a1ef6181cc1" />
+
+ все отлично
+
+
+последняя проверка именнованный том docker volume ls
+вот фото - <img width="1350" height="144" alt="image" src="https://github.com/user-attachments/assets/fd7adeaa-4e76-46a0-971d-9e9712f64413" /> то есть отобразилось 
+DRIVER    VOLUME NAME
+local     2a5944f97119fea2e1ee915c3d7b19743064653d7cbcf9ee907dec86c2326fbe
+local     9ac24f7dce5c91e7ea85552c7d293f2ebfe6a9d56b5ba920ebfa15564c1e9f6f
+local     52799b8673798a1567cee62f2cde3ccaa2ae7d71e054a1422fb810b1e99d8ddb
+local     lab0_postgres_data
