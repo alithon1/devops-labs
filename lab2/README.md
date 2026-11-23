@@ -353,3 +353,52 @@ Caused by: java.lang.ClassNotFoundException: com.example.ApplicationKt
 И до меня доходит что я то меняла в IDEA ApplicationKt на MainKt но не сохранила на диск. Эхх
 Меняю в самом корне  нашего проекта с помощью nanp затем снова все пересобираю чтобы удалить кэши
 
+и ничего не срабатывает
+
+не знаю как написать но во первых я оменяла команду docker run -d --name test-backend -p 8081:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:5432/vet_clinic -e DB_USER=vet_user -e DB_PASSWORD=vet_password vet-backend:good то есть которая вместе с базой напиши как перейти к этому
+
+каждый раз я вводила docker exec test-backend whoami и получала эту ошибку
+<img width="1742" height="28" alt="image" src="https://github.com/user-attachments/assets/54d30199-b0b4-4381-9c67-13043edb1d18" />
+
+я решила логи посмотреть заново и уже была хорошая новость что старых ошибок уже не было но появлиась новая
+<img width="1858" height="164" alt="image" src="https://github.com/user-attachments/assets/5570df6e-bce6-4ea6-9116-2fc186ae3b5f" /> (15:39:28.981 [main] INFO io.ktor.server.Application -- Autoreload is disabled because the development mode is off.
+15:39:29.035 [main] WARN Exposed -- Transaction attempt #0 failed: FATAL: role "vet_user" does not exist. Statement(s): null
+org.postgresql.util.PSQLException: FATAL: role "vet_user" does not exist)
+
+ввела sudo lsof -i :5432
+оказалось COMMAND    PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+postgres   707 cubelime    7u  IPv6 0x538a9e472a033a87      0t0  TCP localhost:postgresql (LISTEN)
+postgres   707 cubelime    8u  IPv4 0x7c1dcdd1d4db1457      0t0  TCP localhost:postgresql (LISTEN)
+com.docke 1507 cubelime   79u  IPv6 0x3dd095b28c712ebe      0t0  TCP *:postgresql (LISTEN)
+
+вот фото <img width="1652" height="110" alt="image" src="https://github.com/user-attachments/assets/c2164bdf-7830-4500-b485-f5fb15584825" />
+
+я остноавила -  brew services stop postgresql@16 все успешно вот фото
+<img width="1766" height="34" alt="image" src="https://github.com/user-attachments/assets/20509fd5-c4bb-4b3f-ba06-da85f6f715b3" />
+
+удалила контейнер и запустила заново и ввела docker exec test-backend whoami
+и получила долгожданное app
+<img width="456" height="28" alt="image" src="https://github.com/user-attachments/assets/a597778f-6717-4874-bd39-995d95c97486" />
+
+удаляю docker rm -f test-backend
+
+вызываю nano src/main/kotlin/Main.kt добавляю комментарий вот фото
+<img width="762" height="134" alt="image" src="https://github.com/user-attachments/assets/b9c62744-18fa-469b-be89-488781a8b291" />
+
+
+вызвала time docker build -f Dockerfile.bad -t vet-backend:bad .
+docker build -f Dockerfile.bad -t vet-backend:bad .  0,25s user 0,23s system 0% cpu 1:20,77 total вот фото
+<img width="1678" height="30" alt="image" src="https://github.com/user-attachments/assets/1edf99ea-23e9-4366-9b99-0383db24ec4c" />
+
+вызвала time docker build -f Dockerfile.good -t vet-backend:good .
+docker build -f Dockerfile.good -t vet-backend:good .  0,12s user 0,16s system 1% cpu 21,153 total вот фото
+<img width="1494" height="34" alt="image" src="https://github.com/user-attachments/assets/a962ec6c-7946-478d-8cd6-22e74580e485" />
+
+разница очевидна
+
+вызываю
+docker compose up --build -d
+Сначала завершилось с ошибкой, отключила VPN и в итоге была бесконечная загрузка снова включила VPN та к как это более логично оставить включенным и нашла не закрытый контейнер запустила docker rm -f postgres-for-test
+
+и в итоге все загрузилось вот фото 
+
