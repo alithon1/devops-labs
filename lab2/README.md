@@ -346,5 +346,10 @@ Caused by: java.lang.ClassNotFoundException: com.example.ApplicationKt
 заустила ./gradlew buildFatJar 
 перезупустила докеры docker build -f Dockerfile.good -t vet-backend:good . и docker build -f Dockerfile.bad -t vet-backend:bad .
 
-pfgecnbkf ./gradlew clean buildFatJar
+увидела что я не очищала кеши ох думаю так давай снова  ./gradlew clean buildFatJar
+и снова перезапутсила докеры
+и все равно та же ошибка 
+
+И до меня доходит что я то меняла в IDEA ApplicationKt на MainKt но не сохранила на диск. Эхх
+Меняю в самом корне  нашего проекта с помощью nanp затем снова все пересобираю чтобы удалить кэши
 
